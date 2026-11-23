@@ -213,10 +213,11 @@
     <!-- VUE MOIS -->
     <section id="view-mois" class="hidden">
       <div class="card">
-        <h2>Saisie rapide <small>codes des jours ouvrés dans l'ordre, sans les week-ends</small></h2>
-        <textarea id="quick" placeholder="RH,RH,RH,RH,RH,Jcc,Jcc,RF,CA,Rtt,R80,Hma,Jvs,...   (on peut aussi écrire : Jvs 8h-16h  ou  9h-16h30)"></textarea>
+        <h2>Saisie rapide <small>codes des jours ouvrés dans l'ordre (sans les week-ends), ou planning partagé collé tel quel</small></h2>
+        <textarea id="quick" placeholder="RH,RH,RH,RH,RH,Jcc,Jcc,RF,CA,Rtt,R80,Hma,Jvs,...   (on peut aussi écrire : Jvs 8h-16h  ou  9h-16h30)&#10;ou coller ici un planning reçu via « Partager le mois »"></textarea>
         <div class="row" style="margin-top:10px">
           <button class="btn" id="quickFill">Remplir le mois</button>
+          <button class="btn sec" id="shareMonth" title="Copier ou envoyer le mois en texte (SMS…), avec les horaires crèche retenus">Partager le mois</button>
           <button class="btn dang" id="clearMonth">Vider le mois</button>
           <span id="quickMsg" class="mut"></span>
         </div>
@@ -613,7 +614,89 @@ $('moisTable').addEventListener('click', e => {
   const k = e.target.dataset.reset; if (!k) return;
   const d = monthData().jours[k]; delete d.debut; delete d.fin; save(); renderMois();
 });
+/* ===== Partage du mois en texte (SMS…) et réimport par la saisie rapide =====
+   Format (une ligne par jour ouvré, l'horaire crèche est celui réellement retenu) :
+     Planning crèche – décembre 2026
+     lun 1 : Jvs | crèche 8h-17h
+     mar 2 : (9h-16h30) | crèche 9h-17h30 | note : dentiste
+     mer 3 : CA | pas de crèche
+     jeu 4 : —                                                                  */
+const JR = ['dim','lun','mar','mer','jeu','ven','sam'];
+const noAcc = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const cleanTxt = s => String(s || '').replace(/[|\r\n]+/g, '/').trim();
+function monthShareText(){
+  const md = monthData();
+  const lines = weekdays().map(day => {
+    const d = md.jours[day.key] || {}, r = compute(day, md);
+    const main = [cleanTxt(d.code), d.travail ? `(${cleanTxt(d.travail).replace(/[()]/g, ' ').trim()})` : ''].filter(Boolean).join(' ');
+    const parts = [main || '—'];
+    if (d.pasDeCreche) parts.push('pas de crèche');
+    else if (r.creche && r.start) parts.push(`crèche ${fmtT(r.start)}-${fmtT(r.end)}`);
+    if (d.note) parts.push(`note : ${cleanTxt(d.note)}`);
+    return `${JR[day.date.getDay()]} ${day.date.getDate()} : ${parts.join(' | ')}`;
+  });
+  return `Planning crèche – ${monthName(cur.y, cur.m)}\n${lines.join('\n')}`;
+}
+// Reconnaît un planning partagé ; null si c'est une saisie rapide classique (codes séparés par des virgules)
+function parseShared(txt){
+  let month = null; const days = [];
+  for (const raw of txt.split(/\r?\n/)){
+    const l = raw.trim(); if (!l) continue;
+    const d = /^(lun|mar|mer|jeu|ven)[a-z]*\.?\s+(\d{1,2})\s*:\s*(.*)$/i.exec(l);
+    if (d){ days.push({n:+d[2], rest:d[3]}); continue; }
+    const h = /([a-zéèûô]+)\s+(\d{4})/i.exec(l), mi = h ? MOIS.findIndex(x => noAcc(x) === noAcc(h[1])) : -1;
+    if (!month && mi >= 0) month = {y:+h[2], m:mi};
+  }
+  return days.length ? {month, days} : null;
+}
+function applySharedDay(day, rest, md, unknown){
+  const parts = rest.split('|').map(s => s.trim());
+  let main = parts.shift() || ''; if (/^[—–-]?$/.test(main)) main = '';
+  const d = {code:'', travail:''};
+  const pm = /^(.*?)\s*\((.*)\)\s*$/.exec(main);
+  if (pm){ d.code = pm[1].trim(); d.travail = pm[2].trim(); }
+  else { const r = parseRange(main); d.code = r ? main.replace(r.match, '').trim() : main; if (r) d.travail = `${fmtT(r.start)}-${fmtT(r.end)}`; }
+  const c = findCode(d.code); if (c) d.code = c.code; else if (d.code) unknown.push(d.code);
+  let creche = null;
+  for (const p of parts){
+    const low = noAcc(p);
+    if (low.startsWith('pas de creche')) d.pasDeCreche = true;
+    else if (low.startsWith('creche')) creche = parseRange(p);
+    else if (low.startsWith('note')) d.note = p.replace(/^note\s*:?\s*/i, '');
+  }
+  if (!d.code && !d.travail && !d.pasDeCreche && !creche && !d.note){ delete md.jours[day.key]; return; }
+  md.jours[day.key] = d;
+  // Horaire crèche de l'autre : on le garde tel quel, en « forcé » seulement s'il diffère de ce que donnerait le code ici
+  if (creche && !d.pasDeCreche){
+    const r = compute(day, md);
+    if (!(r.creche && r.start === creche.start && r.end === creche.end)){ d.debut = creche.start; d.fin = creche.end; }
+  }
+}
+function importShared(shared){
+  if (shared.month && (shared.month.y !== cur.y || shared.month.m !== cur.m)){
+    if (!confirm(`Ce planning concerne ${monthName(shared.month.y, shared.month.m)}. L'importer dans ce mois ?`)) return;
+    cur = {y:shared.month.y, m:shared.month.m}; render();
+  }
+  if (monthSummary(cur.y, cur.m).filled && !confirm(`Remplacer le planning de ${monthName(cur.y, cur.m)} par celui du texte collé ?`)) return;
+  const days = weekdays(), md = monthData(), unknown = []; let n = 0, skipped = 0;
+  shared.days.forEach(s => { const day = days.find(x => x.date.getDate() === s.n); if (!day){ skipped++; return; } applySharedDay(day, s.rest, md, unknown); n++; });
+  save(); render();
+  const msg = [`✅ ${n} jours importés`];
+  if (skipped) msg.push(`⚠️ ${skipped} ligne(s) hors de ce mois ignorée(s)`);
+  if (unknown.length) msg.push(`⚠️ codes inconnus ici : ${[...new Set(unknown)].join(', ')}`);
+  $('quickMsg').textContent = msg.join(' — ');
+  $('quick').value = '';
+}
+$('shareMonth').onclick = async () => {
+  const txt = monthShareText();
+  if (navigator.share && matchMedia('(pointer:coarse)').matches){
+    try { await navigator.share({text:txt}); return; } catch(e){ if (e.name === 'AbortError') return; }
+  }
+  copyPlain(txt); toast('Planning copié : colle-le dans un SMS ou un mail');
+};
 $('quickFill').onclick = () => {
+  const shared = parseShared($('quick').value);
+  if (shared){ importShared(shared); return; }
   const tokens = $('quick').value.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
   if (!tokens.length) return;
   const days = weekdays(), md = monthData(), unknown = [];

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fa500f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Planning crèche">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 3 3%27%3E%3Crect width=%271%27 height=%273%27 fill=%27%23ffd800%27/%3E%3Crect x=%271%27 width=%271%27 height=%273%27 fill=%27%23ff8205%27/%3E%3Crect x=%272%27 width=%271%27 height=%273%27 fill=%27%23e10500%27/%3E%3C/svg%3E">
+<title>Planning crèche</title>
+<style>
+  :root{
+    --cream:#fffaeb; --cream2:#fff3d6; --ink:#1e1e1e; --mut:#6b6457; --line:rgba(30,30,30,.14);
+    --o1:#ffd800; --o2:#ffaf00; --o3:#ff8205; --o4:#fa500f; --o5:#e10500;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Arial,system-ui,sans-serif;background:var(--cream);color:var(--ink);font-size:14px}
+  .stripe{height:10px;background:linear-gradient(90deg,var(--o1) 0 20%,var(--o2) 20% 40%,var(--o3) 40% 60%,var(--o4) 60% 80%,var(--o5) 80%)}
+  .wrap{max-width:1150px;margin:0 auto;padding:0 24px}
+
+  /* Hero */
+  .hero{padding:28px 0 0}
+  .topline{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px}
+  .brand .blocks{display:grid;grid-template-columns:repeat(3,8px);gap:2px}
+  .brand .blocks i{width:8px;height:8px;display:block}
+  .filestatus{font-size:12px;color:var(--mut);display:flex;gap:10px;align-items:center}
+  .filestatus a{color:var(--ink);cursor:pointer;text-decoration:underline}
+  .filestatus .dot{width:8px;height:8px;border-radius:50%;background:#2e8b57;display:inline-block}
+  .filestatus .dot.dirty{background:var(--o3)}
+  .filestatus .dot.err{background:var(--o5)}
+
+  .monthbar{display:flex;align-items:center;gap:18px;margin:34px 0 26px;flex-wrap:wrap}
+  .monthbar h1{font-size:54px;line-height:1;margin:0;font-weight:800;letter-spacing:-.02em;min-width:420px;cursor:pointer}
+  .monthbar h1 span{color:var(--o4)}
+  .arrow{width:52px;height:52px;border:0;background:var(--ink);color:#fff;font-size:26px;cursor:pointer;transition:.15s}
+  .arrow:hover{background:var(--o4)}
+  .monthbar input[type=month]{font-size:16px;padding:10px;border:1px solid var(--ink);background:#fff}
+  .linkbtn{background:none;border:0;font:inherit;text-decoration:underline;cursor:pointer;color:var(--ink)}
+
+  .tabs{display:flex;gap:28px;border-bottom:1px solid var(--line)}
+  .tabs button{background:none;border:0;font:inherit;font-size:16px;padding:12px 0;cursor:pointer;color:var(--mut);border-bottom:4px solid transparent;margin-bottom:-1px}
+  .tabs button:hover{color:var(--ink)}
+  .tabs button.active{color:var(--ink);font-weight:700;border-bottom-color:var(--o4)}
+
+  main.wrap{padding:36px 24px 60px}
+  .card{background:#fff;border:1px solid var(--line);padding:22px;margin-bottom:20px}
+  .card h2{margin:0 0 14px;font-size:20px;font-weight:700}
+  .card h2 small{font-weight:400;color:var(--mut);font-size:13px;margin-left:8px}
+
+  table{border-collapse:collapse;width:100%}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+  th{background:var(--cream2);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+  tr.wk td{border-top:2px solid var(--ink)}
+  tr.nocreche td{color:var(--mut);background:#fcfaf4}
+  tr.warn td{background:#fff0e6}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  tfoot td{font-weight:800;font-size:16px;border-top:3px solid var(--ink);border-bottom:0}
+  tr.click{cursor:pointer} tr.click:hover td{background:var(--cream2)}
+
+  input,select{font:inherit;padding:5px 7px;border:1px solid rgba(30,30,30,.25);border-radius:0;background:#fff}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--o3);outline-offset:-1px}
+  input.time{width:68px;text-align:center}
+  input.time.bad{border-color:var(--o5);background:#ffe3dc}
+  input.code{width:80px}
+  .codesug{position:absolute;z-index:40;background:#fff;border:1px solid var(--ink);box-shadow:4px 4px 0 var(--o2);font-size:13px;min-width:190px}
+  .codesug div{padding:5px 10px;display:flex;gap:14px;cursor:pointer;white-space:nowrap}
+  .codesug div b{min-width:44px}
+  .codesug div span{color:var(--mut)}
+  .codesug div.on{background:var(--o1)}
+  .codesug div.more{cursor:default;color:var(--mut);font-size:12px}
+  .codesug .hint{padding:4px 10px;border-top:1px solid var(--line);color:var(--mut);font-size:11px;cursor:default}
+  input.ovr{background:#ffe9a8;border-color:var(--o2)}
+  textarea{width:100%;font:inherit;padding:10px;border:1px solid rgba(30,30,30,.25);min-height:70px;background:#fff}
+
+  .btn{background:var(--ink);color:#fff;border:1px solid var(--ink);padding:10px 18px;cursor:pointer;font:inherit;font-weight:600;transition:.15s;display:inline-block}
+  .btn:hover{background:var(--o4);border-color:var(--o4)}
+  .btn.sec{background:transparent;color:var(--ink)}
+  .btn.sec:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.dang{background:transparent;color:var(--o5);border-color:var(--o5)}
+  .btn.dang:hover{background:var(--o5);color:#fff}
+  .btn.sm{padding:4px 9px;font-size:12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .mut{color:var(--mut);font-size:12.5px}
+  .badge{display:inline-block;font-size:11px;padding:1px 7px;background:var(--cream2);margin-left:6px}
+  .badge.f{background:#ffd9cc;color:#a32a00}
+  .badge.w{background:var(--o1)}
+  .badge.ok{background:#d8f0df;color:#1e6b3c}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:18px;border:1px solid var(--line)}
+  .kpi{padding:14px 18px;border-right:1px solid var(--line)}
+  .kpi:last-child{border-right:0}
+  .kpi small{display:block;text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--mut)}
+  .kpi b{display:block;font-size:28px;font-weight:800;margin-top:4px}
+
+  #crecheTable td,#crecheTable th{padding:10px 14px;font-size:15px}
+  #crecheTable th{font-size:11px}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;opacity:0;transition:.3s;pointer-events:none;border-left:6px solid var(--o4)}
+  .toast.show{opacity:1}
+  .hidden{display:none!important}
+  .modal{position:fixed;inset:0;background:rgba(30,30,30,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .modalbox{background:var(--cream);max-width:640px;width:100%;padding:28px 32px;border-top:10px solid var(--o4);box-shadow:10px 10px 0 var(--o2)}
+  .modalbox h2{margin:0 0 10px;font-size:24px;font-weight:800}
+  .modalbox li{margin-bottom:12px;line-height:1.45}
+  .path{display:flex;gap:10px;align-items:center;justify-content:space-between;font-family:Consolas,monospace;font-size:12.5px;background:#fff;border:1px solid var(--line);padding:8px 10px;margin:6px 0 4px;word-break:break-all}
+
+
+  .filestatus{flex-wrap:wrap}
+  #fsExport.remind{border-color:var(--o4);color:var(--o4)}
+  .card{overflow-x:auto}
+
+  /* ===== Téléphone ===== */
+  @media (max-width:700px){
+    body{font-size:15px}
+    .wrap{padding:0 12px}
+    .hero{padding:14px 0 0}
+    .filestatus{width:100%;font-size:11.5px}
+    .monthbar{gap:8px;margin:14px 0 10px;flex-wrap:nowrap}
+    .monthbar h1{font-size:28px;min-width:0;flex:1;text-align:center}
+    .arrow{width:42px;height:42px;font-size:22px;flex:none}
+    #nextMonthBtn{display:none}
+    .tabs{gap:18px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+    .tabs button{font-size:15px}
+    main.wrap{padding:16px 12px 40px}
+    .card{padding:14px}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .kpi{border-bottom:1px solid var(--line);padding:10px 12px}
+    .kpi b{font-size:22px}
+    input,select,textarea{font-size:16px}   /* évite le zoom automatique sur iPhone */
+    .btn{padding:10px 14px}
+    #crecheTable td,#crecheTable th{padding:8px 6px;font-size:14px}
+
+    /* Mon mois : une carte par jour */
+    #moisTable thead{display:none}
+    #moisTable,#moisTable tbody,#moisTable tfoot{display:block}
+    #moisTable tbody tr{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;padding:12px 6px;border-bottom:1px solid var(--line)}
+    #moisTable tbody tr.wk{border-top:2px solid var(--ink)}
+    #moisTable tbody tr.nocreche{background:#fcfaf4}
+    #moisTable tbody tr.warn{background:#fff0e6}
+    #moisTable td{border:0;padding:0;background:none!important}
+    #moisTable tr.wk td{border-top:0}
+    #moisTable td:nth-child(1){grid-column:1/-1;font-weight:700}
+    #moisTable td:nth-child(2) input{width:76px}
+    #moisTable td:nth-child(3){grid-column:2/-1}
+    #moisTable td:nth-child(3) input{width:100%!important}
+    #moisTable td:nth-child(4){grid-column:1/3}
+    #moisTable td:nth-child(4)::before{content:"Crèche ";color:var(--mut);font-size:12px}
+    #moisTable td:nth-child(5){font-weight:700}
+    #moisTable td:nth-child(6){text-align:left!important;white-space:nowrap}
+    #moisTable td:nth-child(6)::before{content:"Pas de crèche ";color:var(--mut);font-size:12px}
+    #moisTable td:nth-child(7){grid-column:2/-1}
+    #moisTable td:nth-child(7) input{width:100%!important}
+    #moisTable td:nth-child(7) input::placeholder{color:#bbb}
+    #moisTable tfoot tr{display:flex;justify-content:space-between;padding:12px 6px}
+    #moisTable tfoot td{border:0;padding:0}
+    .codesug{max-width:calc(100vw - 20px)}
+  }
+
+  @media print{
+    .noprint,.hero,.toast,.stripe{display:none!important}
+    body{background:#fff}
+    main.wrap{padding:0}
+    .card{border:0;padding:0}
+  }
+</style>
+</head>
+<body>
+<div class="stripe noprint"></div>
+
+<!-- Application -->
+<div id="app">
+  <div class="wrap hero noprint">
+    <div class="topline">
+      <div class="brand"><div class="blocks"><i style="background:var(--o1)"></i><i style="background:var(--o3)"></i><i style="background:var(--o5)"></i></div>Planning crèche</div>
+      <div class="filestatus"><span class="dot" id="fsDot"></span><span id="fsText"></span>
+        <button class="btn sm sec" id="fsExport" title="Sauvegarder les données dans un fichier">Exporter</button>
+        <button class="btn sm sec" id="fsImport" title="Recharger un fichier de données">Importer</button>
+        <input type="file" id="fsFile" accept=".js,.json,text/javascript,application/json" class="hidden"></div>
+    </div>
+    <div class="monthbar">
+      <button class="arrow" id="prevM" title="Mois précédent">‹</button>
+      <h1 id="monthLabel" title="Cliquer pour choisir un mois"></h1>
+      <input type="month" id="monthPick" class="hidden">
+      <button class="arrow" id="nextM" title="Mois suivant">›</button>
+      <button class="linkbtn" id="nextMonthBtn">Mois à venir</button>
+    </div>
+    <div class="tabs">
+      <button data-view="creche">Vue crèche</button>
+      <button data-view="mois">Mon mois</button>
+      <button data-view="histo">Historique</button>
+      <button data-view="params">Paramétrage</button>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <!-- VUE CRECHE -->
+    <section id="view-creche">
+      <div class="row noprint" style="margin-bottom:18px">
+        <button class="btn" id="copyTable">Copier le tableau</button>
+        <button class="btn sec" id="copyText">Copier en texte</button>
+        <button class="btn sec" id="mailBtn">Préparer un mail</button>
+        <button class="btn sec" id="printBtn">Imprimer / PDF</button>
+        <span id="crecheWarn" class="mut" style="margin-left:8px"></span>
+      </div>
+      <div class="card" id="crecheCard">
+        <h2 id="crecheTitle"></h2>
+        <table id="crecheTable"></table>
+      </div>
+    </section>
+
+    <!-- VUE MOIS -->
+    <section id="view-mois" class="hidden">
+      <div class="card">
+        <h2>Saisie rapide <small>codes des jours ouvrés dans l'ordre, sans les week-ends</small></h2>
+        <textarea id="quick" placeholder="RH,RH,RH,RH,RH,Jcc,Jcc,RF,CA,Rtt,R80,Hma,Jvs,...   (on peut aussi écrire : Jvs 8h-16h  ou  9h-16h30)"></textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="quickFill">Remplir le mois</button>
+          <button class="btn dang" id="clearMonth">Vider le mois</button>
+          <span id="quickMsg" class="mut"></span>
+        </div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="card">
+        <table id="moisTable"></table>
+        <p class="mut">En jaune : horaire crèche modifié pour ce jour (↺ pour revenir à l'horaire du code).</p>
+      </div>
+    </section>
+
+    <!-- VUE HISTORIQUE -->
+    <section id="view-histo" class="hidden">
+      <div class="card">
+        <h2>Historique <small>cliquer sur un mois pour l'ouvrir</small></h2>
+        <table id="histoTable"></table>
+      </div>
+    </section>
+
+    <!-- VUE PARAMETRAGE -->
+    <section id="view-params" class="hidden">
+      <div class="card">
+        <h2>Codes de travail → horaires crèche</h2>
+        <table id="codesTable"></table>
+        <div class="row" style="margin-top:14px">
+          <button class="btn" id="addCode">+ Ajouter un code</button>
+          <button class="btn dang" id="resetCodes">Restaurer les codes par défaut</button>
+        </div>
+        <p class="mut">Type « Férié / pas de crèche » : aucun horaire crèche n'est demandé ce jour-là.</p>
+      </div>
+      <div class="card">
+        <h2>Horaires saisis directement <small>quand il n'y a pas de code</small></h2>
+        <div class="row">
+          Crèche = début du travail moins <input type="number" id="mBefore" style="width:70px"> min,
+          fin du travail plus <input type="number" id="mAfter" style="width:70px"> min
+        </div>
+      </div>
+      <div class="card">
+        <h2>Général</h2>
+        <div class="row" style="margin-bottom:10px">Prénom de l'enfant (titre) : <input id="childName" style="width:220px"></div>
+        <div class="row">Email de la crèche : <input id="crecheMail" style="width:320px"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<datalist id="codeList"></datalist>
+
+<script>
+/* ================= Données par défaut ================= */
+const DEFAULT_CODES = [
+  ['Aur3','13h00-20h00','travail','09:30','17:30'], ['As1','13h00-20h00','travail','09:30','17:30'],
+  ['Hma','09h00-17h00','travail','08:00','17:30'],  ['Mur','06h00-13h20','travail','08:00','16:30'],
+  ['R80','Jour non travaillé (80%)','repos','09:00','16:30'], ['FIS','08h00-16h00','travail','08:00','17:00'],
+  ['RH','Jour non travaillé','repos','09:00','16:30'], ['Jcc','08h00-16h00','travail','08:00','17:00'],
+  ['Isc','08h00-16h00','travail','08:00','17:00'], ['Jvs','08h00-16h00','travail','08:00','17:00'],
+  ['RF','Férié','ferie','',''], ['Kur','15h40-23h00','travail','09:30','17:30'],
+  ['Jma','08h00-16h00','travail','08:00','17:00'], ['Rtt','Jour non travaillé','repos','09:00','16:30'],
+  ['Fcc','10h30-18h30','travail','09:00','17:30'], ['CH','Jour non travaillé','repos','09:00','16:30'],
+  ['Reu','08h00-16h00','travail','08:00','17:00'], ['Fe2s','09h00-17h00','travail','08:00','17:30'],
+  ['CA','Congés annuels','repos','09:00','16:30'], ['Jsc','08h00-16h00','travail','08:00','17:00'],
+  ['H303','09h00-17h00','travail','08:00','17:30'], ['R60','Jour non travaillé','repos','09:00','16:30'],
+  ['Hs1','09h00-17h00','travail','08:00','17:30'],
+].map(([code,travail,type,debut,fin]) => ({code,travail,type,debut,fin}));
+
+const JOURS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const TYPES = [['travail','Travaillé'],['repos','Non travaillé'],['ferie','Férié / pas de crèche']];
+
+function defaultState(){
+  return {version:1, parametres:{prenom:'', emailCreche:'', marges:{avant:0, apres:60}, codes:JSON.parse(JSON.stringify(DEFAULT_CODES))}, mois:{}};
+}
+function normalize(s){
+  if (!s || typeof s !== 'object' || !s.parametres || !Array.isArray(s.parametres.codes)) throw new Error('format');
+  s.mois ||= {}; s.parametres.marges ||= {avant:0, apres:60}; return s;
+}
+
+/* ================= État ================= */
+let state = null;
+let cur = nextMonth(), view = 'creche';
+function nextMonth(){ const n = new Date(); return n.getMonth() === 11 ? {y:n.getFullYear()+1, m:0} : {y:n.getFullYear(), m:n.getMonth()+1}; }
+
+/* ================= Enregistrement (sur l'appareil) ================= */
+// Les données sont enregistrées automatiquement dans le stockage du navigateur de CET appareil.
+// « Exporter » produit un fichier planning-donnees.js (même format que la version PC),
+// « Importer » recharge un tel fichier (sauvegarde, ou données venant du PC).
+const DATA_FILE = 'planning-donnees.js';
+const STORE_KEY = 'planningCreche.v2', EXPORT_KEY = 'planningCreche.lastExport';
+let lastSaved = null;
+
+function serialize(){
+  return `// Données du Planning crèche (paramétrage + historique).\n// Ne pas renommer : ce fichier doit rester dans le même dossier que planning-creche.html.\nwindow.PLANNING_DATA = ${JSON.stringify(state, null, 2)};\n`;
+}
+function parseDataFile(txt){ return normalize(JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1))); }
+
+function loadLocal(){
+  try { const s = localStorage.getItem(STORE_KEY); return s ? normalize(JSON.parse(s)) : null; } catch(e){ console.error(e); return null; }
+}
+function save(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); lastSaved = new Date(); setStatus('ok'); }
+  catch(e){ setStatus('err', e.message); }
+}
+function setStatus(s, msg){
+  const dot = document.getElementById('fsDot'), t = document.getElementById('fsText');
+  dot.className = 'dot' + (s === 'err' ? ' err' : '');
+  const exp = localStorage.getItem(EXPORT_KEY);
+  const days = exp ? Math.floor((Date.now() - new Date(exp)) / 864e5) : null;
+  const expTxt = exp == null ? 'jamais exporté' : days === 0 ? "exporté aujourd'hui" : `exporté il y a ${days} j`;
+  t.textContent = s === 'err' ? `Erreur d'enregistrement : ${msg}`
+    : `Enregistré sur cet appareil${lastSaved ? ' à ' + lastSaved.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : ''} · ${expTxt}`;
+  // Rappel discret si aucune sauvegarde fichier depuis 30 jours
+  document.getElementById('fsExport').classList.toggle('remind', exp == null || days >= 30);
+}
+// Exporter : partage (mobile → OneDrive, mail…) si possible, sinon téléchargement
+async function exportFile(){
+  const blob = new Blob([serialize()], {type:'text/javascript'});
+  const file = new File([blob], DATA_FILE, {type:'text/javascript'});
+  try {
+    if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:DATA_FILE}); }
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = DATA_FILE; a.click(); }
+  } catch(e){ if (e.name === 'AbortError') return; toast('Export impossible : ' + e.message); return; }
+  localStorage.setItem(EXPORT_KEY, new Date().toISOString()); setStatus('ok'); toast('Fichier exporté');
+}
+async function importFile(f){
+  if (!f) return;
+  let s; try { s = parseDataFile(await f.text()); } catch(e){ alert("Ce fichier n'est pas un fichier de données du Planning crèche."); return; }
+  if (!confirm('Remplacer les données de cet appareil par celles du fichier ?')) return;
+  state = s; save(); render(); toast('Données importées');
+}
+
+// Reprise des données de la première version (stockées dans le navigateur)
+function migrateOld(){
+  try {
+    const o = JSON.parse(localStorage.getItem('planningCreche.v1')); if (!o) return null;
+    const s = defaultState();
+    s.parametres.prenom = o.childName || ''; s.parametres.emailCreche = o.crecheMail || '';
+    if (o.margins) s.parametres.marges = {avant:o.margins.before||0, apres:o.margins.after||0};
+    if (o.codes) s.parametres.codes = o.codes.map(c => ({code:c.code, travail:c.work, type:c.kind, debut:c.start, fin:c.end}));
+    for (const [k, m] of Object.entries(o.months || {})){
+      const jours = {};
+      for (const [dk, d] of Object.entries(m.days || {})) jours[dk] = {code:d.code||'', travail:d.work||'', debut:d.start, fin:d.end, pasDeCreche:d.noCreche, note:d.note};
+      s.mois[k] = {jours};
+    }
+    return s;
+  } catch(e){ return null; }
+}
+
+/* ================= Utilitaires ================= */
+const P = () => state.parametres;
+const pad = n => String(n).padStart(2,'0');
+const keyOf = (y, m) => `${y}-${pad(m+1)}`;
+const mKey = () => keyOf(cur.y, cur.m);
+const monthData = (k = mKey()) => (state.mois[k] ||= {jours:{}});
+const findCode = c => c ? P().codes.find(x => x.code.toLowerCase() === String(c).trim().toLowerCase()) : null;
+const toMin = t => { if (!t) return null; const [h,m] = t.split(':').map(Number); return h*60+m; };
+// Saisie libre d'une heure : "8", "12", "8h", "8h30", "8:30", "8.30", "830", "1230" → "HH:MM" (null si invalide)
+function parseTime(s){
+  s = String(s || '').trim().toLowerCase().replace(/\s+/g, '');
+  if (!s) return '';
+  let h, m = 0, r;
+  if ((r = /^(\d{1,2})(?:[h:.](\d{0,2}))?$/.exec(s))){ h = +r[1]; m = r[2] ? +(r[2].length === 1 ? r[2] + '0' : r[2]) : 0; }
+  else if ((r = /^(\d{1,2})(\d{2})$/.exec(s))){ h = +r[1]; m = +r[2]; }
+  else return null;
+  return h > 23 || m > 59 ? null : `${pad(h)}:${pad(m)}`;
+}
+const fromMin = m => `${pad(Math.floor(m/60))}:${pad(m%60)}`;
+const fmtT = t => { if (!t) return ''; const [h,m] = t.split(':').map(Number); return m ? `${h}h${pad(m)}` : `${h}h`; };
+const fmtD = min => min == null ? '-' : `${Math.floor(min/60)}h${pad(min%60)}`;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const monthName = (y, m) => `${MOIS[m]} ${y}`;
+
+function easter(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+  h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+  mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1; return new Date(y,mo-1,da);
+}
+const holCache = {};
+function holidays(y){
+  if (holCache[y]) return holCache[y];
+  const e = easter(y), add = n => { const d = new Date(e); d.setDate(d.getDate()+n); return d; };
+  const list = [[new Date(y,0,1),"Jour de l'an"],[add(1),'Lundi de Pâques'],[new Date(y,4,1),'Fête du travail'],[new Date(y,4,8),'8 mai 1945'],
+    [add(39),'Ascension'],[add(50),'Lundi de Pentecôte'],[new Date(y,6,14),'Fête nationale'],[new Date(y,7,15),'Assomption'],
+    [new Date(y,10,1),'Toussaint'],[new Date(y,10,11),'Armistice'],[new Date(y,11,25),'Noël']];
+  const o = {}; list.forEach(([d,n]) => o[`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`] = n);
+  return holCache[y] = o;
+}
+function weekdays(y = cur.y, m = cur.m){
+  const out = [], d = new Date(y, m, 1);
+  while (d.getMonth() === m){
+    if (d.getDay() !== 0 && d.getDay() !== 6) out.push({key:`${y}-${pad(m+1)}-${pad(d.getDate())}`, date:new Date(d)});
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+const dayLabel = d => `${JOURS[d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]}`;
+
+function parseRange(s){ // "8h-16h", "08h00-16h00", "9h 16h30", "8:30 - 12:30"
+  const r = /(\d{1,2})\s*[hH:]\s*(\d{2})?\s*(?:-|–|à|a|\s)\s*(\d{1,2})\s*[hH:]?\s*(\d{2})?/.exec(s || '');
+  if (!r) return null;
+  return {start:`${pad(+r[1])}:${r[2]||'00'}`, end:`${pad(+r[3])}:${r[4]||'00'}`, match:r[0]};
+}
+
+/* Ce qu'on demande à la crèche pour un jour */
+function compute(day, md = monthData()){
+  const hol = holidays(day.date.getFullYear())[day.key];
+  const d = md.jours[day.key] || {};
+  const c = findCode(d.code);
+  const r = {d, c, hol, start:null, end:null, creche:true, override:false, warn:''};
+  if (d.code && !c) r.warn = 'Code inconnu';
+  if (d.pasDeCreche){ r.creche = false; return r; }
+  if (d.debut && d.fin){ r.start = d.debut; r.end = d.fin; r.override = true; }
+  else if (c){
+    if (c.type === 'ferie' || !c.debut) r.creche = false;
+    else if (d.travail && c.type === 'travail' && parseRange(d.travail) && !sameAsCode(d.travail, c)) fromWork(r, d.travail);
+    else { r.start = c.debut; r.end = c.fin; }
+  }
+  else if (d.travail && parseRange(d.travail)) fromWork(r, d.travail);
+  else if (hol && !d.code) r.creche = false;
+  else r.warn ||= 'À compléter';
+  if (r.start && r.end){ r.dur = toMin(r.end) - toMin(r.start); if (r.dur <= 0) r.warn = 'Horaire incohérent'; }
+  return r;
+}
+function sameAsCode(work, c){ const a = parseRange(work), b = parseRange(c.travail); return a && b && a.start === b.start && a.end === b.end; }
+function fromWork(r, work){
+  const p = parseRange(work), mg = P().marges;
+  r.start = fromMin(Math.max(0, toMin(p.start) - (+mg.avant || 0)));
+  r.end = fromMin(Math.min(23*60+59, toMin(p.end) + (+mg.apres || 0)));
+  r.fromWork = true;
+}
+function monthSummary(y, m){
+  const md = state.mois[keyOf(y, m)] || {jours:{}};
+  let total = 0, nb = 0, warns = 0, filled = 0;
+  weekdays(y, m).forEach(day => {
+    const r = compute(day, md), d = r.d;
+    if (d.code || d.travail || d.debut || d.pasDeCreche) filled++;
+    if (r.warn) warns++;
+    if (r.creche && r.start){ total += r.dur; nb++; }
+  });
+  return {total, nb, warns, filled};
+}
+const noCrecheLabel = r => r.hol || (r.c && r.c.type === 'ferie') ? 'Férié' : 'Absent';
+
+function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
+
+// Codes triés par ordre alphabétique (i = position d'origine, pour les modifications)
+const sortedCodes = () => P().codes.map((c, i) => ({c, i})).sort((a, b) => a.c.code.localeCompare(b.c.code, 'fr', {sensitivity:'base', numeric:true}));
+
+/* ================= Rendu ================= */
+
+function render(){
+  document.getElementById('monthLabel').innerHTML = `${cap(MOIS[cur.m])} <span>${cur.y}</span>`;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  ['creche','mois','histo','params'].forEach(v => document.getElementById('view-'+v).classList.toggle('hidden', v !== view));
+  document.querySelector('.monthbar').style.visibility = (view === 'params' || view === 'histo') ? 'hidden' : 'visible';
+  document.getElementById('codeList').innerHTML = sortedCodes().map(({c}) => c).map(c => `<option value="${esc(c.code)}">${esc(c.travail)}</option>`).join('');
+  ({creche:renderCreche, mois:renderMois, histo:renderHisto, params:renderParams})[view]();
+}
+
+function crecheTitle(){
+  const m = monthName(cur.y, cur.m);
+  return P().prenom ? `Planning crèche de ${P().prenom} – ${m}` : `Planning crèche – ${m}`;
+}
+
+function renderCreche(){
+  let total = 0; const s = monthSummary(cur.y, cur.m);
+  document.getElementById('crecheTitle').textContent = crecheTitle();
+  let html = '<thead><tr><th>Jour</th><th>Horaires souhaités</th><th class="num">Durée</th></tr></thead><tbody>';
+  weekdays().forEach((day, i) => {
+    const r = compute(day), wk = i > 0 && day.date.getDay() === 1 ? ' class="wk"' : '';
+    let h, dur;
+    if (!r.creche){ h = noCrecheLabel(r); dur = '-'; }
+    else if (r.start){ h = `${fmtT(r.start)} – ${fmtT(r.end)}`; dur = fmtD(r.dur); total += r.dur; }
+    else { h = '<span style="color:var(--o5)">à compléter</span>'; dur = ''; }
+    html += `<tr${wk}><td>${dayLabel(day.date)}</td><td>${h}</td><td class="num">${dur}</td></tr>`;
+  });
+  html += `</tbody><tfoot><tr><td>Total</td><td></td><td class="num">${fmtD(total)}</td></tr></tfoot>`;
+  document.getElementById('crecheTable').innerHTML = html;
+  const env = monthData().envoyeLe;
+  document.getElementById('crecheWarn').innerHTML = !s.filled
+    ? '⚠️ Aucun planning saisi pour ce mois : allez dans « Mon mois ».'
+    : s.warns ? `⚠️ ${s.warns} jour(s) à vérifier dans « Mon mois ».`
+    : env ? `✅ Complet · envoyé le ${new Date(env).toLocaleDateString('fr-FR')}` : '✅ Planning complet.';
+}
+
+function crecheText(){
+  let total = 0;
+  const lines = weekdays().map(day => {
+    const r = compute(day);
+    if (!r.creche) return `${dayLabel(day.date)} : ${noCrecheLabel(r).toLowerCase()}`;
+    if (!r.start) return `${dayLabel(day.date)} : à définir`;
+    total += r.dur; return `${dayLabel(day.date)} : ${fmtT(r.start)} – ${fmtT(r.end)} (${fmtD(r.dur)})`;
+  });
+  return `${crecheTitle()}\n\n${lines.join('\n')}\n\nTotal : ${fmtD(total)}`;
+}
+
+function renderMois(){
+  let total = 0, nbC = 0, nbW = 0, warns = 0;
+  let html = `<thead><tr><th>Jour</th><th>Code</th><th>Horaire de travail</th><th>Horaire crèche</th><th class="num">Durée</th><th>Pas de crèche</th><th>Note</th></tr></thead><tbody>`;
+  weekdays().forEach((day, i) => {
+    const r = compute(day), k = day.key, d = r.d;
+    if (r.creche && r.start){ total += r.dur; nbC++; }
+    if ((r.c && r.c.type === 'travail') || (!r.c && d.travail && parseRange(d.travail))) nbW++;
+    if (r.warn) warns++;
+    const cls = [i > 0 && day.date.getDay() === 1 ? 'wk' : '', !r.creche ? 'nocreche' : '', r.warn ? 'warn' : ''].join(' ');
+    const badges = (r.hol ? `<span class="badge f">${esc(r.hol)}</span>` : '') + (r.warn ? `<span class="badge w">${r.warn}</span>` : '') + (r.fromWork ? `<span class="badge">calculé</span>` : '');
+    const ovr = r.override ? 'ovr' : '';
+    html += `<tr class="${cls}">
+      <td>${dayLabel(day.date)}${badges}</td>
+      <td><input class="code" autocomplete="off" autocapitalize="off" enterkeyhint="next" data-k="${k}" data-f="code" value="${esc(d.code||'')}"></td>
+      <td><input data-k="${k}" data-f="travail" value="${esc(d.travail||'')}" placeholder="${esc(r.c ? r.c.travail : (r.hol && !d.code ? 'Férié' : 'ex : 8h-16h'))}" style="width:190px"></td>
+      <td style="white-space:nowrap">${r.creche ? `<input class="time ${ovr}" data-k="${k}" data-f="debut" value="${fmtT(r.start)}" placeholder="8h30" title="Ex : 8h30, 830, 12 — flèches ↑↓ : ±15 min"> – <input class="time ${ovr}" data-k="${k}" data-f="fin" value="${fmtT(r.end)}" placeholder="17h" title="Ex : 17h, 1730 — flèches ↑↓ : ±15 min">
+          ${r.override ? `<button class="btn sec sm" data-reset="${k}" title="Revenir à l'horaire du code">↺</button>` : ''}` : '<span class="mut">—</span>'}</td>
+      <td class="num">${r.creche && r.start ? fmtD(r.dur) : '-'}</td>
+      <td style="text-align:center"><input type="checkbox" data-k="${k}" data-f="pasDeCreche" ${d.pasDeCreche ? 'checked' : ''}></td>
+      <td><input data-k="${k}" data-f="note" value="${esc(d.note||'')}" placeholder="Note" style="width:140px"></td>
+    </tr>`;
+  });
+  html += `</tbody><tfoot><tr><td colspan="4">Total crèche</td><td class="num">${fmtD(total)}</td><td colspan="2"></td></tr></tfoot>`;
+  document.getElementById('moisTable').innerHTML = html;
+  document.getElementById('kpis').innerHTML =
+    `<div class="kpi"><small>Total crèche</small><b>${fmtD(total)}</b></div><div class="kpi"><small>Jours de crèche</small><b>${nbC}</b></div>
+     <div class="kpi"><small>Jours travaillés</small><b>${nbW}</b></div><div class="kpi"><small>À vérifier</small><b style="color:${warns ? 'var(--o5)' : '#2e8b57'}">${warns}</b></div>`;
+}
+
+function renderHisto(){
+  const keys = Object.keys(state.mois).filter(k => monthSummary(+k.slice(0,4), +k.slice(5)-1).filled).sort().reverse();
+  if (!keys.length){ document.getElementById('histoTable').innerHTML = '<tr><td class="mut">Aucun mois saisi pour l\'instant.</td></tr>'; return; }
+  let html = '<thead><tr><th>Mois</th><th class="num">Jours de crèche</th><th class="num">Total crèche</th><th>État</th><th>Envoyé à la crèche</th></tr></thead><tbody>';
+  keys.forEach(k => {
+    const y = +k.slice(0,4), m = +k.slice(5)-1, s = monthSummary(y, m), env = state.mois[k].envoyeLe;
+    html += `<tr class="click" data-open="${k}"><td><b>${cap(monthName(y, m))}</b></td><td class="num">${s.nb}</td><td class="num"><b>${fmtD(s.total)}</b></td>
+      <td>${s.warns ? `<span class="badge w">${s.warns} à vérifier</span>` : '<span class="badge ok">complet</span>'}</td>
+      <td>${env ? new Date(env).toLocaleDateString('fr-FR') : '<span class="mut">—</span>'}</td></tr>`;
+  });
+  document.getElementById('histoTable').innerHTML = html + '</tbody>';
+}
+
+function renderParams(){
+  let html = `<thead><tr><th>Code</th><th>Horaire de travail / libellé</th><th>Type</th><th>Crèche début</th><th>Crèche fin</th><th class="num">Durée</th><th></th></tr></thead><tbody>`;
+  sortedCodes().forEach(({c, i}) => {
+    const dur = c.type !== 'ferie' && c.debut && c.fin ? fmtD(toMin(c.fin) - toMin(c.debut)) : '-';
+    html += `<tr>
+      <td><input data-i="${i}" data-f="code" value="${esc(c.code)}" style="width:90px"></td>
+      <td><input data-i="${i}" data-f="travail" value="${esc(c.travail)}" style="width:230px"></td>
+      <td><select data-i="${i}" data-f="type">${TYPES.map(([v,l]) => `<option value="${v}" ${c.type===v?'selected':''}>${l}</option>`).join('')}</select></td>
+      <td>${c.type !== 'ferie' ? `<input class="time" data-i="${i}" data-f="debut" value="${fmtT(c.debut)}" placeholder="8h">` : ''}</td>
+      <td>${c.type !== 'ferie' ? `<input class="time" data-i="${i}" data-f="fin" value="${fmtT(c.fin)}" placeholder="17h">` : ''}</td>
+      <td class="num">${dur}</td>
+      <td><button class="btn dang sm" data-del="${i}">Supprimer</button></td></tr>`;
+  });
+  document.getElementById('codesTable').innerHTML = html + '</tbody>';
+  document.getElementById('mBefore').value = P().marges.avant;
+  document.getElementById('mAfter').value = P().marges.apres;
+  document.getElementById('childName').value = P().prenom || '';
+  document.getElementById('crecheMail').value = P().emailCreche || '';
+}
+
+/* ================= Événements ================= */
+const $ = id => document.getElementById(id);
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { view = b.dataset.view; render(); });
+const goMonth = delta => { cur.m += delta; if (cur.m < 0){ cur.m = 11; cur.y--; } if (cur.m > 11){ cur.m = 0; cur.y++; } render(); };
+$('prevM').onclick = () => goMonth(-1);
+$('nextM').onclick = () => goMonth(1);
+$('nextMonthBtn').onclick = () => { cur = nextMonth(); render(); };
+$('monthLabel').onclick = () => { const p = $('monthPick'); p.value = mKey(); p.classList.remove('hidden'); p.focus(); p.showPicker?.(); };
+$('monthPick').onchange = e => { if (e.target.value){ const [y, m] = e.target.value.split('-').map(Number); cur = {y, m:m-1}; } e.target.classList.add('hidden'); render(); };
+$('monthPick').onblur = e => e.target.classList.add('hidden');
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName) || $('app').classList.contains('hidden')) return;
+  if (e.key === 'ArrowLeft') goMonth(-1); if (e.key === 'ArrowRight') goMonth(1);
+});
+
+// Mon mois
+$('moisTable').addEventListener('change', e => {
+  const el = e.target, k = el.dataset.k, f = el.dataset.f; if (!k) return;
+  const d = (monthData().jours[k] ||= {});
+  if (f === 'pasDeCreche') d.pasDeCreche = el.checked;
+  else if (f === 'debut' || f === 'fin'){
+    const t = parseTime(el.value);
+    if (!t){ el.classList.add('bad'); toast('Heure non reconnue (ex : 8h30, 830, 12)'); return; }
+    const r = compute(weekdays().find(x => x.key === k));
+    d.debut = r.start; d.fin = r.end; d[f] = t;
+  }
+  else if (f === 'code' || f === 'travail'){
+    d[f] = el.value.trim();
+    if (f === 'code'){ const c = findCode(d.code); if (c) d.code = c.code; delete d.debut; delete d.fin; }
+  }
+  else d[f] = el.value;
+  save(); renderMois(); restoreFocus();
+});
+$('moisTable').addEventListener('click', e => {
+  const k = e.target.dataset.reset; if (!k) return;
+  const d = monthData().jours[k]; delete d.debut; delete d.fin; save(); renderMois();
+});
+$('quickFill').onclick = () => {
+  const tokens = $('quick').value.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+  if (!tokens.length) return;
+  const days = weekdays(), md = monthData(), unknown = [];
+  tokens.slice(0, days.length).forEach((t, i) => {
+    const r = parseRange(t); let code = t, travail = '';
+    if (r){ code = t.replace(r.match, '').trim(); travail = `${fmtT(r.start)}-${fmtT(r.end)}`; }
+    const c = findCode(code); if (code && !c) unknown.push(code);
+    md.jours[days[i].key] = {code: c ? c.code : code, travail};
+  });
+  save(); renderMois();
+  const msg = [];
+  if (tokens.length !== days.length) msg.push(`⚠️ ${tokens.length} code(s) pour ${days.length} jours ouvrés`);
+  if (unknown.length) msg.push(`⚠️ codes inconnus : ${[...new Set(unknown)].join(', ')}`);
+  $('quickMsg').textContent = msg.length ? msg.join(' — ') : `✅ ${tokens.length} jours remplis`;
+};
+$('clearMonth').onclick = () => {
+  if (confirm(`Vider tout le planning de ${monthName(cur.y, cur.m)} ?`)){ delete state.mois[mKey()]; save(); renderMois(); }
+};
+
+// Historique
+$('histoTable').addEventListener('click', e => {
+  const tr = e.target.closest('[data-open]'); if (!tr) return;
+  const [y, m] = tr.dataset.open.split('-').map(Number); cur = {y, m:m-1}; view = 'mois'; render();
+});
+
+// Paramétrage
+$('codesTable').addEventListener('change', e => {
+  const el = e.target, i = el.dataset.i, f = el.dataset.f; if (i == null) return;
+  let v = el.value.trim();
+  if (f === 'debut' || f === 'fin'){
+    v = parseTime(v);
+    if (v === null){ el.classList.add('bad'); toast('Heure non reconnue (ex : 8h30, 830, 12)'); return; }
+  }
+  P().codes[i][f] = v; save(); renderParams(); restoreFocus();
+});
+
+// Champs horaires : flèches ↑↓ = ±15 min, Entrée = valider
+document.addEventListener('keydown', e => {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains('time')) return;
+  if (e.key === 'Enter'){ el.blur(); return; }
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  e.preventDefault();
+  const t = parseTime(el.value) || '08:00';
+  const m = Math.min(23*60+45, Math.max(0, toMin(t) + (e.key === 'ArrowUp' ? 15 : -15)));
+  el.value = fmtT(fromMin(m));
+  pendingFocus = selOf(el);
+  el.dispatchEvent(new Event('change', {bubbles:true}));
+});
+
+// Garder le curseur au bon endroit quand le tableau se redessine après une modification
+let pendingFocus = null;
+const selOf = el => !el || !el.dataset || !el.dataset.f ? null
+  : el.dataset.k ? `[data-k="${el.dataset.k}"][data-f="${el.dataset.f}"]`
+  : el.dataset.i != null ? `[data-i="${el.dataset.i}"][data-f="${el.dataset.f}"]` : null;
+function restoreFocus(){
+  const s = pendingFocus; pendingFocus = null; if (!s) return;
+  setTimeout(() => { const el = document.querySelector(s); if (el){ el.focus(); if (el.select && el.type !== 'checkbox') el.select(); } }, 0);
+}
+['moisTable','codesTable'].forEach(id => {
+  const tbl = $(id);
+  tbl.addEventListener('mousedown', e => { pendingFocus = selOf(e.target.closest('input,select')); });
+  tbl.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const all = [...tbl.querySelectorAll('input,select')], i = all.indexOf(e.target);
+    pendingFocus = selOf(all[i + (e.shiftKey ? -1 : 1)]);
+  });
+  tbl.addEventListener('focusin', () => { setTimeout(() => { pendingFocus = null; }, 0); });
+});
+
+// Saisie du code (Mon mois) : petite liste à droite du champ, validation dès que le code est sans ambiguïté
+const sug = document.createElement('div'); sug.className = 'codesug hidden'; document.body.appendChild(sug);
+let sugEl = null, sugList = [], sugIdx = 0;
+const isCodeInput = el => el && el.matches && el.matches('#moisTable input[data-f=code]');
+function sugClose(){ sug.classList.add('hidden'); sugEl = null; sugList = []; }
+function sugShow(el){
+  const q = el.value.trim().toLowerCase();
+  sugEl = el;
+  sugList = q ? sortedCodes().map(x => x.c).filter(c => c.code.toLowerCase().startsWith(q)).slice(0, 8) : [];
+  if (!sugList.length){ sug.classList.add('hidden'); return; }
+  sugIdx = Math.min(sugIdx, sugList.length - 1);
+  sug.innerHTML = sugList.map((c, i) => `<div data-i="${i}" class="${i === sugIdx ? 'on' : ''}"><b>${esc(c.code)}</b><span>${esc(c.travail)}</span></div>`).join('')
+    + '<div class="hint">Entrée : valider · ↑↓ : choisir</div>';
+  const r = el.getBoundingClientRect();
+  sug.classList.remove('hidden');
+  const right = r.right + 6 + sug.offsetWidth <= innerWidth;
+  sug.style.left = (right ? r.right + 6 : Math.max(6, r.left)) + scrollX + 'px';
+  sug.style.top = (right ? r.top : r.bottom + 4) + scrollY + 'px';
+  sug.classList.remove('hidden');
+}
+// Valide le code et passe au jour suivant (ou reste sur le dernier jour)
+function sugCommit(el, code){
+  const all = [...document.querySelectorAll('#moisTable input[data-f=code]')];
+  el.value = code; sugClose();
+  pendingFocus = selOf(all[all.indexOf(el) + 1] || el);
+  el.dispatchEvent(new Event('change', {bubbles:true}));
+}
+document.addEventListener('input', e => {
+  const el = e.target; if (!isCodeInput(el)) return;
+  sugIdx = 0; sugShow(el);
+  // Un seul code possible et entièrement tapé (ex : « Jvs ») → validé tout de suite
+  const q = el.value.trim().toLowerCase();
+  if ((e.inputType || '').startsWith('insert') && sugList.length === 1 && sugList[0].code.toLowerCase() === q) sugCommit(el, sugList[0].code);
+});
+document.addEventListener('keydown', e => {
+  const el = e.target; if (!isCodeInput(el)) return;
+  const open = sugEl === el && sugList.length;
+  if (e.key === 'Enter'){ e.preventDefault(); sugCommit(el, open ? sugList[sugIdx].code : el.value.trim()); }
+  else if (open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')){
+    e.preventDefault(); sugIdx = (sugIdx + (e.key === 'ArrowDown' ? 1 : -1) + sugList.length) % sugList.length; sugShow(el);
+  }
+  else if (e.key === 'Escape') sugClose();
+  else if (e.key === 'Tab' && open) el.value = sugList[sugIdx].code; // la validation se fait au changement de champ
+});
+sug.addEventListener('mousedown', e => {
+  e.preventDefault();   // garde le curseur dans le champ
+  const d = e.target.closest('[data-i]'); if (d && sugEl) sugCommit(sugEl, sugList[+d.dataset.i].code);
+});
+document.addEventListener('focusout', e => { if (isCodeInput(e.target)) sugClose(); });
+window.addEventListener('scroll', () => { if (sugEl) sugShow(sugEl); }, true);
+$('codesTable').addEventListener('click', e => {
+  const i = e.target.dataset.del; if (i == null) return;
+  if (confirm(`Supprimer le code ${P().codes[i].code} ?`)){ P().codes.splice(i, 1); save(); renderParams(); }
+});
+$('addCode').onclick = () => {
+  P().codes.push({code:'', travail:'', type:'travail', debut:'08:00', fin:'17:00'}); save(); renderParams();
+  [...document.querySelectorAll('#codesTable input[data-f=code]')].find(x => !x.value)?.focus();
+};
+$('resetCodes').onclick = () => {
+  if (confirm('Remplacer tous les codes par ceux par défaut ?')){ P().codes = JSON.parse(JSON.stringify(DEFAULT_CODES)); save(); renderParams(); }
+};
+$('mBefore').onchange = e => { P().marges.avant = +e.target.value || 0; save(); };
+$('mAfter').onchange = e => { P().marges.apres = +e.target.value || 0; save(); };
+$('childName').onchange = e => { P().prenom = e.target.value.trim(); save(); };
+$('crecheMail').onchange = e => { P().emailCreche = e.target.value.trim(); save(); };
+
+// Vue crèche : partage (marque le mois comme envoyé)
+function markSent(){ monthData().envoyeLe = new Date().toISOString().slice(0,10); save(); renderCreche(); }
+function copyPlain(txt){ const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+$('copyText').onclick = () => { copyPlain(crecheText()); markSent(); toast('Texte copié'); };
+$('copyTable').onclick = () => {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = `<p><b>${esc(crecheTitle())}</b></p>` + $('crecheTable').outerHTML;
+  tmp.querySelectorAll('table').forEach(t => { t.border = 1; t.style.borderCollapse = 'collapse'; t.style.fontFamily = 'Arial'; });
+  tmp.querySelectorAll('td,th').forEach(c => { c.style.padding = '4px 10px'; });
+  tmp.querySelectorAll('th').forEach(c => { c.style.background = '#fff3d6'; });
+  tmp.style.position = 'fixed'; tmp.style.left = '-9999px'; document.body.appendChild(tmp);
+  const range = document.createRange(); range.selectNodeContents(tmp);
+  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  document.execCommand('copy'); sel.removeAllRanges(); tmp.remove();
+  markSent(); toast('Tableau copié : collez-le dans Word ou Outlook');
+};
+$('mailBtn').onclick = () => {
+  markSent();
+  location.href = `mailto:${encodeURIComponent(P().emailCreche || '')}?subject=${encodeURIComponent(crecheTitle())}&body=${encodeURIComponent('Bonjour,\n\nVoici le planning souhaité :\n\n' + crecheText() + '\n\nCordialement')}`;
+};
+$('printBtn').onclick = () => { markSent(); window.print(); };
+
+// Export / import
+$('fsExport').onclick = exportFile;
+$('fsImport').onclick = () => $('fsFile').click();
+$('fsFile').onchange = e => { importFile(e.target.files[0]); e.target.value = ''; };
+
+// Démarrage : données de cet appareil, sinon ancienne version, sinon valeurs par défaut
+state = loadLocal() || migrateOld() || defaultState();
+navigator.storage?.persist?.();   // demande au navigateur de ne pas effacer les données
+render(); setStatus('ok');
+if (!localStorage.getItem(STORE_KEY)) save();
+</script>
+</body>
+</html>
